@@ -1,0 +1,17 @@
+###
+# MQTT
+###
+
+MQTT_CLIENT_NAME = "Nutty-Nios-Admin"
+MQTT_HOSTNAME = "localhost"
+MQTT_PORT = 1883
+
+
+###
+# Thresholds
+###
+
+UP_TILT_THRESHOLD = 100
+DOWN_TILT_THRESHOLD = -100
+LEFT_TILT_THREHOLD = 150
+RIGHT_TILT_THRESHOLD = -150

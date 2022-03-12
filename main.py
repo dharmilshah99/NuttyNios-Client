@@ -1,35 +1,36 @@
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
+import json
+import paho.mqtt.client as paho
 
-from utils import AccelerometerStream
+from utils import *
+from config import *
 
 ###
 # Global Variables
 ###
 
-FIG = plt.figure()
-AXES = FIG.add_subplot(1,1,1)
-X_VALS = []
-Y_VALS = []
-time = 0
-
-###
-# Helpers
-###
-
-def animate(i):
-    if NiosStream.events.is_set():
-        data = NiosStream.get()
-        X_VALS.append(i)
-        Y_VALS.append(data)
-        AXES.clear()
-        AXES.plot(X_VALS, Y_VALS)
+MQTT_CLIENT = paho.Client(MQTT_CLIENT_NAME)
+MQTT_CLIENT.connect(MQTT_HOSTNAME, MQTT_PORT)
 
 ###
 # Main
 ###
 
 if __name__ == "__main__":
-    NiosStream = AccelerometerStream()
-    ani = animation.FuncAnimation(FIG, animate, interval=10)
-    plt.show()
+    NiosStream = NiosDataStream()
+    DirectionProcessor = ProcessDirection()
+    while True:
+        if NiosStream.events.is_set():
+            # Get and Process Data
+            data = NiosStream.get()
+            directions_moved = DirectionProcessor(data)
+            # Serialize Data
+            SwitchData = SwitchModel(data.switches)
+            ButtonData = ButtonModel(data.buttons)
+            DirectionData = DirectionModel(directions_moved)
+            # Publish
+            publish_mqtt_topic(MQTT_CLIENT, f"node/{MQTT_CLIENT_NAME}/data/button", json.dumps(ButtonData.__dict__))
+            publish_mqtt_topic(MQTT_CLIENT, f"node/{MQTT_CLIENT_NAME}/data/switch", json.dumps(SwitchData.__dict__))
+            publish_mqtt_topic(MQTT_CLIENT, f"node/{MQTT_CLIENT_NAME}/data/direction", json.dumps(DirectionData.__dict__))
+        else:
+            continue
+        
