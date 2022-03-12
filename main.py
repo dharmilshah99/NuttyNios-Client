@@ -9,28 +9,29 @@ from config import *
 ###
 
 MQTT_CLIENT = paho.Client(MQTT_CLIENT_NAME)
-MQTT_CLIENT.connect(MQTT_HOSTNAME, MQTT_PORT)
 
 ###
 # Main
 ###
 
 if __name__ == "__main__":
+    # Initialize Objects
     NiosStream = NiosDataStream()
     DirectionProcessor = ProcessDirection()
+    MQTTConnection = MQTT(MQTT_CLIENT, MQTT_HOSTNAME, MQTT_PORT)
+    MQTTConnection.connect()
     while True:
         if NiosStream.events.is_set():
-            # Get and Process Data
             data = NiosStream.get()
-            directions_moved = DirectionProcessor(data)
-            # Serialize Data
-            SwitchData = SwitchModel(data.switches)
+            # Button
             ButtonData = ButtonModel(data.buttons)
-            DirectionData = DirectionModel(directions_moved)
-            # Publish
-            publish_mqtt_topic(MQTT_CLIENT, f"node/{MQTT_CLIENT_NAME}/data/button", json.dumps(ButtonData.__dict__))
-            publish_mqtt_topic(MQTT_CLIENT, f"node/{MQTT_CLIENT_NAME}/data/switch", json.dumps(SwitchData.__dict__))
-            publish_mqtt_topic(MQTT_CLIENT, f"node/{MQTT_CLIENT_NAME}/data/direction", json.dumps(DirectionData.__dict__))
+            MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/button", payload=json.dumps(ButtonData.__dict__))
+            # Switch
+            SwitchData = SwitchModel(data.switches)
+            MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/switch", payload=json.dumps(SwitchData.__dict__))
+            # Direction
+            DirectionData = DirectionModel(DirectionProcessor(data))
+            MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/direction", payload=json.dumps(DirectionData.__dict__))
         else:
             continue
         

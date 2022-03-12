@@ -1,7 +1,9 @@
 import threading
-import json
+import time
 from subprocess import Popen, PIPE
 from collections import deque
+
+from cv2 import FlannBasedMatcher
 
 from models import *
 from config import *
@@ -108,14 +110,31 @@ class ProcessDirection(object):
             return None
 
 
-###
-# Helpers
-###
+class MQTT(object):
+    """Handles MQTT Connections"""
 
-def publish_mqtt_topic(mqtt_client, topic_name, payload):
-    # Publish
-    mqtt_client.publish(
-        topic=topic_name,
-        payload=payload
-    )
-    return
+    def __init__(self, client, hostname, port) -> None:
+        # Client
+        self.client = client
+        self.client.on_connect = self.on_connect
+        self.is_connected = False
+        # Server
+        self.hostname, self.port = hostname, port
+
+    def connect(self):
+        """Connects to MQTT Server"""
+        while not self.is_connected:
+            try:
+                self.client.connect(self.hostname, self.port)
+            except:
+                time.sleep(1)
+        self.client.loop_start()
+
+    def publish(self, topic, payload):
+        """Publishes payload to dedicated topic"""
+        self.client.publish(topic, payload)
+
+    def on_connect(self, client, userdata, flags, rc):
+        """Successful connection callback"""
+        if rc == 0:
+            self.is_connected = True
