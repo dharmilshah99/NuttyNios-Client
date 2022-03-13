@@ -3,7 +3,6 @@ import time
 from subprocess import Popen, PIPE
 from collections import deque
 
-from cv2 import FlannBasedMatcher
 
 from models import *
 from config import *
@@ -24,7 +23,7 @@ class NiosDataStream(object):
 
     def run(self):
         """Continually get messages from a NIOS"""
-        with Popen('C:/intelFPGA_lite/18.1/quartus/bin64/nios2-terminal.exe', shell=True, stdout=PIPE) as p:
+        with Popen('C:/intelFPGA_lite/18.1/quartus/bin64/nios2-terminal.exe', shell=True, stdout=PIPE) as p: # Change path on Ubuntu
             for line in p.stdout:
                 nios_data = line.decode().strip()
                 # Ignore Empty Line/Lines starting with Nios
@@ -32,7 +31,7 @@ class NiosDataStream(object):
                     continue
                 # Process
                 nios_data = self._process_data(nios_data)
-                # print(nios_data)
+                print(nios_data)
                 nios_data = NiosDataModel(**nios_data)
                 self.msg = nios_data
                 self.events.set()
@@ -117,6 +116,8 @@ class MQTT(object):
         # Client
         self.client = client
         self.client.on_connect = self.on_connect
+        self.client.username_pw_set(username=MQTT_USERNAME, password=MQTT_PASSWORD)
+        self.client.tls_set(MQTT_CA_CERT, MQTT_CERTFILE, MQTT_KEYFILE, tls_version=2)
         self.is_connected = False
         # Server
         self.hostname, self.port = hostname, port
@@ -126,9 +127,9 @@ class MQTT(object):
         while not self.is_connected:
             try:
                 self.client.connect(self.hostname, self.port)
+                self.client.loop_start()
             except:
                 time.sleep(1)
-        self.client.loop_start()
 
     def publish(self, topic, payload):
         """Publishes payload to dedicated topic"""

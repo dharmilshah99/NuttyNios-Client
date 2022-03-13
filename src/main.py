@@ -16,10 +16,10 @@ MQTT_CLIENT = paho.Client(MQTT_CLIENT_NAME)
 
 if __name__ == "__main__":
     # Initialize Objects
-    NiosStream = NiosDataStream()
-    DirectionProcessor = ProcessDirection()
     MQTTConnection = MQTT(MQTT_CLIENT, MQTT_HOSTNAME, MQTT_PORT)
     MQTTConnection.connect()
+    NiosStream = NiosDataStream()
+    DirectionProcessor = ProcessDirection()
     while True:
         if NiosStream.events.is_set():
             data = NiosStream.get()
