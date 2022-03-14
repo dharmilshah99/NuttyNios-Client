@@ -23,7 +23,7 @@ class NiosDataStream(object):
 
     def run(self):
         """Continually get messages from a NIOS"""
-        with Popen('C:/intelFPGA_lite/18.1/quartus/bin64/nios2-terminal.exe', shell=True, stdout=PIPE) as p: # Change path on Ubuntu
+        with Popen('C:/intelFPGA_lite/18.0/quartus/bin64/nios2-terminal.exe', shell=True, stdout=PIPE) as p: # Change path on Ubuntu
             for line in p.stdout:
                 nios_data = line.decode().strip()
                 # Ignore Empty Line/Lines starting with Nios
@@ -31,7 +31,6 @@ class NiosDataStream(object):
                     continue
                 # Process
                 nios_data = self._process_data(nios_data)
-                print(nios_data)
                 nios_data = NiosDataModel(**nios_data)
                 self.msg = nios_data
                 self.events.set()
@@ -47,7 +46,7 @@ class NiosDataStream(object):
         if len(arr) != 5:
             return
         arr = [int(x, 16) for x in arr]
-        coords = [self._twos_comp(x, 32) for x in arr[:3]]
+        coords = [self._twos_comp(x, 32)/8388608 for x in arr[:3]]
         return {
             "axes": coords,
             "buttons": arr[3],
@@ -64,7 +63,7 @@ class NiosDataStream(object):
 class ProcessDirection(object):
     """Simple algorithm that processes accelerometer data into directions"""
 
-    def __init__(self, max_queue_size=5):
+    def __init__(self, max_queue_size=2):
         """Initialize Queues"""
         self.max_queue_size = max_queue_size
         self.x_tilt_queue = deque(maxlen=self.max_queue_size)
