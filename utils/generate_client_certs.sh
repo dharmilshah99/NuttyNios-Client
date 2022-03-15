@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 #doesn't currently work using varaibles
-COMMON_NAME="localhost"
+COMMON_NAME=$1
 SUBJECT_CLIENT="/C=SE/ST=Stockholm/L=Stockholm/O=himinds/OU=Client/CN=$COMMON_NAME"
 CERTS_DIR="./../certs/"
 
