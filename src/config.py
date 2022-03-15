@@ -6,7 +6,7 @@ MQTT_USERNAME = "admin"
 MQTT_PASSWORD = "admin"
 
 MQTT_CLIENT_NAME = "Nutty-Nios-Admin"
-MQTT_HOSTNAME = "localhost"
+MQTT_HOSTNAME = "52.5.188.233"
 MQTT_PORT = 31883
 
 MQTT_CA_CERT = "./certs/server/ca.crt"

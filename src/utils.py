@@ -23,7 +23,8 @@ class NiosDataStream(object):
 
     def run(self):
         """Continually get messages from a NIOS"""
-        with Popen('C:/intelFPGA_lite/18.0/quartus/bin64/nios2-terminal.exe', shell=True, stdout=PIPE) as p: # Change path on Ubuntu
+        with Popen('C:/intelFPGA_lite/18.0/quartus/bin64/nios2-terminal.exe', shell=True, stdout=PIPE) as p: # Path for Windows
+        # with Popen("nios2-terminal", shell=True, executable='/bin/bash', stdout=PIPE) as p: # Path for Ubuntu
             for line in p.stdout:
                 nios_data = line.decode().strip()
                 # Ignore Empty Line/Lines starting with Nios
