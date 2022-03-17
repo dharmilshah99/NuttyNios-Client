@@ -40,12 +40,12 @@ class NiosDataStream(object):
 
                 # Write Data
                 if self.is_transmit_data:
-                    p.communicate(input=str.encode(self.transmit_data))
+                    p.stdin.write(str.encode(self.transmit_data))
                     self.is_transmit_data = False
                     
     def send(self, transmit_data):
         """Sets message to send to Nios"""
-        self.transmit_data = transmit_data
+        self.transmit_data = "$" + transmit_data + "$" #$ Indicates start/end of message character
         self.is_transmit_data = True
 
     def get(self):
