@@ -21,7 +21,7 @@ if __name__ == "__main__":
     NiosStream = NiosDataStream()
     DirectionProcessor = ProcessDirection()
     while True:
-        if NiosStream.events.is_set():
+        if NiosStream.is_received_data:
             data = NiosStream.get()
             # Button
             ButtonData = ButtonModel(data.buttons)

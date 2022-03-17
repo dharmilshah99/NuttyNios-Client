@@ -31,23 +31,21 @@ class NiosDataStream(object):
             for line in p.stdout:
                 # Read Data
                 nios_data = line.decode().strip()
-
                 if (nios_data == '') or (nios_data[0] == 'n'): # Ignore Empty Line/Lines starting with Nios
                     continue
-
                 nios_data = self._process_data(nios_data)
                 nios_data = NiosDataModel(**nios_data)
-                self.msg = nios_data
+                self.receive_msg = nios_data
                 self.is_received_data = True
 
                 # Write Data
-                if self.is_received_data:
-                    p.communicate(input=str.encode(self.transmit_msg))
-                    self.is_received_data = False
+                if self.is_transmit_data:
+                    p.communicate(input=str.encode(self.transmit_data))
+                    self.is_transmit_data = False
                     
-    def send(self, transmit_msg, p):
+    def send(self, transmit_data):
         """Sets message to send to Nios"""
-        self.transmit_data = transmit_msg
+        self.transmit_data = transmit_data
         self.is_transmit_data = True
 
     def get(self):
