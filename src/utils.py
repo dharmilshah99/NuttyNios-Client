@@ -18,7 +18,7 @@ class NiosDataStream(object):
     def __init__(self, jtag_client):
         """Initialize Thread."""
         self.jtag_client = jtag_client
-        self.message_buffer = deque(maxlen=5)
+        self.message_buffer = deque(maxlen=2)
         # Thread
         self.thread = threading.Thread(target=self.run, daemon=True)
         self.thread.start()
@@ -34,7 +34,7 @@ class NiosDataStream(object):
         while True:
             # Read Data
             nios_data = self.jtag_client.read()
-            nios_data = nios_data.decode().strip()
+            nios_data = nios_data.decode()
             if (nios_data == '') or (nios_data[0] == 'n'): # Ignore Empty Line/Lines starting with Nios
                 continue
             self.message_buffer.append(nios_data)
@@ -43,6 +43,9 @@ class NiosDataStream(object):
             msg = msg.splitlines()[-2]
             self.receive_msg = msg
             self.is_received_data = True
+
+
+            self.send("hello")
 
         # with Popen('C:/intelFPGA_lite/18.0/quartus/bin64/nios2-terminal.exe', shell=True, stdout=PIPE) as p: # Path for Windows
         # # with Popen("nios2-terminal", shell=True, executable='/bin/bash', stdout=PIPE) as p: # Path for Ubuntu
@@ -63,7 +66,7 @@ class NiosDataStream(object):
                     
     def send(self, transmit_data):
         """Sets message to send to Nios"""
-        self.transmit_data = "$" + transmit_data + "$" #$ Indicates start/end of message character
+        self.jtag_client.write(str.encode(transmit_data + "$"))  #$ Indicates start/end of message character
         self.is_transmit_data = True
 
     def get(self):
