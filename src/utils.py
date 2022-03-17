@@ -15,33 +15,51 @@ from config import *
 class NiosDataStream(object):
     """Gets data in a dedicated thread"""
 
-    def __init__(self):
+    def __init__(self, jtag_client):
         """Initialize Thread."""
+        self.jtag_client = jtag_client
+        self.message_buffer = deque(maxlen=5)
         # Thread
         self.thread = threading.Thread(target=self.run, daemon=True)
         self.thread.start()
         # Events
+        self.stop = False
         self.is_received_data = False
         self.is_transmit_data = False
+        
 
     def run(self):
         """Continually get messages from a NIOS"""
-        with Popen('C:/intelFPGA_lite/18.0/quartus/bin64/nios2-terminal.exe', shell=True, stdout=PIPE) as p: # Path for Windows
-        # with Popen("nios2-terminal", shell=True, executable='/bin/bash', stdout=PIPE) as p: # Path for Ubuntu
-            for line in p.stdout:
-                # Read Data
-                nios_data = line.decode().strip()
-                if (nios_data == '') or (nios_data[0] == 'n'): # Ignore Empty Line/Lines starting with Nios
-                    continue
-                nios_data = self._process_data(nios_data)
-                nios_data = NiosDataModel(**nios_data)
-                self.receive_msg = nios_data
-                self.is_received_data = True
 
-                # Write Data
-                if self.is_transmit_data:
-                    p.stdin.write(str.encode(self.transmit_data))
-                    self.is_transmit_data = False
+        while True:
+            # Read Data
+            nios_data = self.jtag_client.read()
+            nios_data = nios_data.decode().strip()
+            if (nios_data == '') or (nios_data[0] == 'n'): # Ignore Empty Line/Lines starting with Nios
+                continue
+            self.message_buffer.append(nios_data)
+            # Set lates Data Received
+            msg = ''.join(self.message_buffer)
+            msg = msg.splitlines()[-2]
+            self.receive_msg = msg
+            self.is_received_data = True
+
+        # with Popen('C:/intelFPGA_lite/18.0/quartus/bin64/nios2-terminal.exe', shell=True, stdout=PIPE) as p: # Path for Windows
+        # # with Popen("nios2-terminal", shell=True, executable='/bin/bash', stdout=PIPE) as p: # Path for Ubuntu
+        #     for line in p.stdout:
+        #         # Read Data
+        #         nios_data = line.decode().strip()
+        #         if (nios_data == '') or (nios_data[0] == 'n'): # Ignore Empty Line/Lines starting with Nios
+        #             continue
+        #         nios_data = self._process_data(nios_data)
+        #         nios_data = NiosDataModel(**nios_data)
+        #         self.receive_msg = nios_data
+        #         self.is_received_data = True
+
+        #         # Write Data
+        #         if self.is_transmit_data:
+        #             p.stdin.write(str.encode(self.transmit_data))
+        #             self.is_transmit_data = False
                     
     def send(self, transmit_data):
         """Sets message to send to Nios"""

@@ -1,5 +1,6 @@
 import json
 import paho.mqtt.client as paho
+import intel_jtag_uart
 
 from utils import *
 from config import *
@@ -16,22 +17,24 @@ MQTT_CLIENT = paho.Client(MQTT_CLIENT_NAME)
 
 if __name__ == "__main__":
     # Initialize Objects
-    MQTTConnection = MQTT(MQTT_CLIENT, MQTT_HOSTNAME, MQTT_PORT)
-    MQTTConnection.connect()
-    NiosStream = NiosDataStream()
-    DirectionProcessor = ProcessDirection()
+    JtagClient = intel_jtag_uart.intel_jtag_uart()
+    # MQTTConnection = MQTT(MQTT_CLIENT, MQTT_HOSTNAME, MQTT_PORT)
+    # MQTTConnection.connect()
+    NiosStream = NiosDataStream(JtagClient)
+    # DirectionProcessor = ProcessDirection()
     while True:
         if NiosStream.is_received_data:
             data = NiosStream.get()
-            # Button
-            ButtonData = ButtonModel(data.buttons)
-            MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/button", payload=json.dumps(ButtonData.__dict__))
-            # Switch
-            SwitchData = SwitchModel(data.switches)
-            MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/switch", payload=json.dumps(SwitchData.__dict__))
-            # Direction
-            DirectionData = DirectionModel(DirectionProcessor(data))
-            MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/direction", payload=json.dumps(DirectionData.__dict__))
+            print(data)
+            # # Button
+            # ButtonData = ButtonModel(data.buttons)
+            # MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/button", payload=json.dumps(ButtonData.__dict__))
+            # # Switch
+            # SwitchData = SwitchModel(data.switches)
+            # MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/switch", payload=json.dumps(SwitchData.__dict__))
+            # # Direction
+            # DirectionData = DirectionModel(DirectionProcessor(data))
+            # MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/direction", payload=json.dumps(DirectionData.__dict__))
         else:
             continue
         
