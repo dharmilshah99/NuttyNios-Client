@@ -17,29 +17,43 @@ class NiosDataStream(object):
 
     def __init__(self):
         """Initialize Thread."""
-        self.events = threading.Event()
+        # Thread
         self.thread = threading.Thread(target=self.run, daemon=True)
         self.thread.start()
+        # Events
+        self.is_received_data = False
+        self.is_transmit_data = False
 
     def run(self):
         """Continually get messages from a NIOS"""
         with Popen('C:/intelFPGA_lite/18.0/quartus/bin64/nios2-terminal.exe', shell=True, stdout=PIPE) as p: # Path for Windows
         # with Popen("nios2-terminal", shell=True, executable='/bin/bash', stdout=PIPE) as p: # Path for Ubuntu
             for line in p.stdout:
+                # Read Data
                 nios_data = line.decode().strip()
-                # Ignore Empty Line/Lines starting with Nios
-                if (nios_data == '') or (nios_data[0] == 'n'):
+
+                if (nios_data == '') or (nios_data[0] == 'n'): # Ignore Empty Line/Lines starting with Nios
                     continue
-                # Process
+
                 nios_data = self._process_data(nios_data)
                 nios_data = NiosDataModel(**nios_data)
                 self.msg = nios_data
-                self.events.set()
+                self.is_received_data = True
+
+                # Write Data
+                if self.is_received_data:
+                    p.communicate(input=str.encode(self.transmit_msg))
+                    self.is_received_data = False
+                    
+    def send(self, transmit_msg, p):
+        """Sets message to send to Nios"""
+        self.transmit_data = transmit_msg
+        self.is_transmit_data = True
 
     def get(self):
         """Get messages"""
-        self.events.clear()
-        return self.msg
+        self.is_received_data = False
+        return self.receive_msg
 
     def _process_data(self, raw_data):
         """Processes raw data from Terminal"""
