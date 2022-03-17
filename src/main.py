@@ -18,23 +18,33 @@ MQTT_CLIENT = paho.Client(MQTT_CLIENT_NAME)
 if __name__ == "__main__":
     # Initialize Objects
     JtagClient = intel_jtag_uart.intel_jtag_uart()
-    # MQTTConnection = MQTT(MQTT_CLIENT, MQTT_HOSTNAME, MQTT_PORT)
-    # MQTTConnection.connect()
+    MQTTConnection = MQTT(MQTT_CLIENT, MQTT_HOSTNAME, MQTT_PORT)
+    MQTTConnection.connect()
     NiosStream = NiosDataStream(JtagClient)
-    # DirectionProcessor = ProcessDirection()
+    DirectionProcessor = ProcessDirection()
+    # State Vars
+    previous_direction = None
     while True:
         if NiosStream.is_received_data:
+            # Process
             data = NiosStream.get()
+            data = fpga_process_data(data)
             print(data)
-            # # Button
-            # ButtonData = ButtonModel(data.buttons)
-            # MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/button", payload=json.dumps(ButtonData.__dict__))
-            # # Switch
-            # SwitchData = SwitchModel(data.switches)
-            # MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/switch", payload=json.dumps(SwitchData.__dict__))
-            # # Direction
-            # DirectionData = DirectionModel(DirectionProcessor(data))
-            # MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/direction", payload=json.dumps(DirectionData.__dict__))
+            data = NiosDataModel(**data)
+            # Button
+            ButtonData = ButtonModel(data.buttons)
+            MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/button", payload=json.dumps(ButtonData.__dict__))
+            # Switch
+            SwitchData = SwitchModel(data.switches)
+            MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/switch", payload=json.dumps(SwitchData.__dict__))
+            # Direction
+            DirectionData = DirectionModel(DirectionProcessor(data))
+            MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/direction", payload=json.dumps(DirectionData.__dict__))
+            # Publish Direction on CHange
+            current_direction = fpga_get_direction(DirectionData)
+            if current_direction != previous_direction:
+                fpga_send_direction(NiosStream, current_direction)
+            previous_direction = current_direction
         else:
             continue
         

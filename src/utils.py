@@ -8,64 +8,79 @@ from models import *
 from config import *
 
 ###
-# Objects
+# FPGA
 ###
 
+def fpga_get_direction(direction_data):
+    # Get first direction
+    if direction_data.directions_moved:
+        direction_moved = direction_data.directions_moved.pop()
+        return direction_moved
 
+def fpga_send_direction(nios_stream, direction_moved):
+    # Return
+    if direction_moved == DirectionMoved.UP:
+        nios_stream.send("Up")
+    elif direction_moved == DirectionMoved.DOWN:
+        nios_stream.send("Down")
+    elif direction_moved == DirectionMoved.LEFT:
+        nios_stream.send("Left")
+    elif direction_moved == DirectionMoved.RIGHT:
+        nios_stream.send("Right")
+    else:
+        nios_stream.send("None")
+    return
+
+def fpga_process_data(raw_data):
+    """Processes raw data from Terminal"""
+    arr = raw_data.split(',')
+    if len(arr) != 5:
+        return
+    arr = [int(x, 16) for x in arr]
+    coords = [fpga_twos_comp(x, 32)/8388608 for x in arr[:3]]
+    return {
+        "axes": coords,
+        "buttons": arr[3],
+        "switches": arr[4]
+    }
+
+def fpga_twos_comp(val, bits):
+    """Interprets integer as 32bit twos-complement number"""
+    if (val & (1 << (bits - 1))) != 0:
+        val = val - (1 << bits)
+    return val
+
+
+###
+# Objects
+###
 class NiosDataStream(object):
     """Gets data in a dedicated thread"""
 
-    def __init__(self, jtag_client):
+    def __init__(self, jtag_client, max_queue_size=3):
         """Initialize Thread."""
         self.jtag_client = jtag_client
-        self.message_buffer = deque(maxlen=2)
+        self.message_buffer = deque(maxlen=max_queue_size)
         # Thread
         self.thread = threading.Thread(target=self.run, daemon=True)
         self.thread.start()
         # Events
-        self.stop = False
-        self.is_received_data = False
-        self.is_transmit_data = False
-        
+        self.is_received_data = False        
 
     def run(self):
         """Continually get messages from a NIOS"""
-
         while True:
-            # Read Data
+            # Read
             nios_data = self.jtag_client.read()
             nios_data = nios_data.decode()
-            if (nios_data == '') or (nios_data[0] == 'n'): # Ignore Empty Line/Lines starting with Nios
+            # Process
+            if (nios_data == '') or (nios_data[0] == 'n'):
                 continue
-            self.message_buffer.append(nios_data)
-            # Set lates Data Received
-            msg = ''.join(self.message_buffer)
-            msg = msg.splitlines()[-2]
-            self.receive_msg = msg
+            self.receive_msg = self._process(nios_data)
             self.is_received_data = True
-
-
-            self.send("hello")
-
-        # with Popen('C:/intelFPGA_lite/18.0/quartus/bin64/nios2-terminal.exe', shell=True, stdout=PIPE) as p: # Path for Windows
-        # # with Popen("nios2-terminal", shell=True, executable='/bin/bash', stdout=PIPE) as p: # Path for Ubuntu
-        #     for line in p.stdout:
-        #         # Read Data
-        #         nios_data = line.decode().strip()
-        #         if (nios_data == '') or (nios_data[0] == 'n'): # Ignore Empty Line/Lines starting with Nios
-        #             continue
-        #         nios_data = self._process_data(nios_data)
-        #         nios_data = NiosDataModel(**nios_data)
-        #         self.receive_msg = nios_data
-        #         self.is_received_data = True
-
-        #         # Write Data
-        #         if self.is_transmit_data:
-        #             p.stdin.write(str.encode(self.transmit_data))
-        #             self.is_transmit_data = False
                     
     def send(self, transmit_data):
-        """Sets message to send to Nios"""
+        """Sends message to send to Nios"""
         self.jtag_client.write(str.encode(transmit_data + "$"))  #$ Indicates start/end of message character
         self.is_transmit_data = True
 
@@ -74,30 +89,17 @@ class NiosDataStream(object):
         self.is_received_data = False
         return self.receive_msg
 
-    def _process_data(self, raw_data):
-        """Processes raw data from Terminal"""
-        arr = raw_data.split(',')
-        if len(arr) != 5:
-            return
-        arr = [int(x, 16) for x in arr]
-        coords = [self._twos_comp(x, 32)/8388608 for x in arr[:3]]
-        return {
-            "axes": coords,
-            "buttons": arr[3],
-            "switches": arr[4]
-        }
-
-    def _twos_comp(self, val, bits):
-        """Interprets integer as 32bit twos-complement number"""
-        if (val & (1 << (bits - 1))) != 0:
-            val = val - (1 << bits)
-        return val
-
+    def _process(self, data):
+        """Returns last valid input of Nios"""
+        self.message_buffer.append(data)
+        msg = ''.join(self.message_buffer)
+        msg = msg.splitlines()[-2]
+        return msg
 
 class ProcessDirection(object):
     """Simple algorithm that processes accelerometer data into directions"""
 
-    def __init__(self, max_queue_size=2):
+    def __init__(self, max_queue_size=5):
         """Initialize Queues"""
         self.max_queue_size = max_queue_size
         self.x_tilt_queue = deque(maxlen=self.max_queue_size)
