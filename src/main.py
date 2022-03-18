@@ -32,16 +32,10 @@ if __name__ == "__main__":
             if data is None:
                 continue
             data = NiosDataModel(**data)
-            # Button
-            ButtonData = ButtonModel(data.buttons)
-            MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/button", payload=json.dumps(ButtonData.__dict__))
-            # Switch
-            SwitchData = SwitchModel(data.switches)
-            MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/switch", payload=json.dumps(SwitchData.__dict__))
-            # Direction
+            # Publish Direction
             DirectionData = DirectionModel(DirectionProcessor(data))
             MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/direction", payload=json.dumps(DirectionData.__dict__))
-            # Publish Direction on Change
+            # Send Direction to Board Change
             current_direction = fpga_get_direction(DirectionData)
             if current_direction != previous_direction:
                 fpga_send_direction(NiosStream, current_direction)
