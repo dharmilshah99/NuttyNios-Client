@@ -28,7 +28,7 @@ def fpga_send_direction(nios_stream, direction_moved):
     elif direction_moved == DirectionMoved.RIGHT:
         nios_stream.send("Right")
     else:
-        nios_stream.send("None")
+        nios_stream.send("Nutty Nios")
     return
 
 def fpga_process_data(raw_data):
@@ -91,6 +91,7 @@ class NiosDataStream(object):
 
     def _process(self, data):
         """Returns last valid input of Nios"""
+        # Buffer Input
         self.message_buffer.append(data)
         msg = ''.join(self.message_buffer)
         msg = msg.splitlines()[-2]

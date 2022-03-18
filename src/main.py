@@ -29,7 +29,8 @@ if __name__ == "__main__":
             # Process
             data = NiosStream.get()
             data = fpga_process_data(data)
-            print(data)
+            if data is None:
+                continue
             data = NiosDataModel(**data)
             # Button
             ButtonData = ButtonModel(data.buttons)
@@ -40,7 +41,7 @@ if __name__ == "__main__":
             # Direction
             DirectionData = DirectionModel(DirectionProcessor(data))
             MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/direction", payload=json.dumps(DirectionData.__dict__))
-            # Publish Direction on CHange
+            # Publish Direction on Change
             current_direction = fpga_get_direction(DirectionData)
             if current_direction != previous_direction:
                 fpga_send_direction(NiosStream, current_direction)
