@@ -11,18 +11,18 @@ from config import *
 # FPGA
 ###
 
-def fpga_send_game_mode(game_mode_data):
+def fpga_send_game_mode(nios_stream, game_mode_data):
     """Sends game mode to Nios"""
     if game_mode_data == "0":
-        return "-"
+        nios_stream.send("-")
     elif game_mode_data == "1":
-         return "+"
+         nios_stream.send("+")
     else:
-        return None
+        return
 
-def fpga_send_score(score_data):
+def fpga_send_score(nios_stream, score_data):
     """sends score for Nios to Display"""
-    return "~" + score_data
+    nios_stream.send("$Score" + score_data)
 
 def fpga_get_direction(direction_data):
     """Gets direction to send to Nios"""
@@ -35,13 +35,13 @@ def fpga_send_direction(nios_stream, direction_moved):
     """Sends direction to Nios"""
     # Return
     if direction_moved == DirectionMoved.UP:
-        nios_stream.send("Up")
+        nios_stream.send("~UP")
     elif direction_moved == DirectionMoved.DOWN:
-        nios_stream.send("Down")
+        nios_stream.send("~DOWN")
     elif direction_moved == DirectionMoved.LEFT:
-        nios_stream.send("Left")
+        nios_stream.send("~LEFT")
     elif direction_moved == DirectionMoved.RIGHT:
-        nios_stream.send("Right")
+        nios_stream.send("~RIGHT")
     else:
         nios_stream.send(None)
     return
@@ -69,6 +69,7 @@ def fpga_twos_comp(val, bits):
 ###
 # Objects
 ###
+
 class NiosDataStream(object):
     """Gets data in a dedicated thread"""
 
