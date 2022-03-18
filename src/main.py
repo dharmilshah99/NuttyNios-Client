@@ -24,27 +24,44 @@ if __name__ == "__main__":
     DirectionProcessor = ProcessDirection()
     # State Vars
     previous_direction = None
+    count = 0
     while True:
         if NiosStream.is_received_data:
             # Process
             data = NiosStream.get()
-            data = fpga_process_data(data)
-            print(data)
-            data = NiosDataModel(**data)
-            # Button
-            ButtonData = ButtonModel(data.buttons)
-            MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/button", payload=json.dumps(ButtonData.__dict__))
-            # Switch
-            SwitchData = SwitchModel(data.switches)
-            MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/switch", payload=json.dumps(SwitchData.__dict__))
-            # Direction
-            DirectionData = DirectionModel(DirectionProcessor(data))
-            MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/direction", payload=json.dumps(DirectionData.__dict__))
-            # Publish Direction on CHange
-            current_direction = fpga_get_direction(DirectionData)
-            if current_direction != previous_direction:
-                fpga_send_direction(NiosStream, current_direction)
-            previous_direction = current_direction
+            if data != None:
+
+                if count == 0:
+                    start = time.perf_counter()
+
+                if count > 2000:
+                    end = time.perf_counter()
+                    print("Send 2000 packets in ", end-start, " seconds")
+
+                data = fpga_process_data(data)
+                print(data)
+                data = NiosDataModel(**data)
+                # Button
+                ButtonData = ButtonModel(data.buttons)
+                MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/button", payload=json.dumps(ButtonData.__dict__))
+                # Switch
+                SwitchData = SwitchModel(data.switches)
+                MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/switch", payload=json.dumps(SwitchData.__dict__))
+                # Direction
+                DirectionData = DirectionModel(DirectionProcessor(data))
+                MQTTConnection.publish(topic=f"node/{MQTT_CLIENT_NAME}/data/direction", payload=json.dumps(DirectionData.__dict__))
+                # Publish Direction on CHange
+                current_direction = fpga_get_direction(DirectionData)
+                if current_direction != previous_direction:
+                    fpga_send_direction(NiosStream, current_direction)
+                previous_direction = current_direction
+
+
+                count = count + 1
+
+
+            else:
+                print("Data is None")
         else:
             continue
         
