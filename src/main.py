@@ -22,9 +22,17 @@ if __name__ == "__main__":
     MQTTConnection.connect()
     NiosStream = NiosDataStream(JtagClient)
     DirectionProcessor = ProcessDirection()
+    print("[INFO] Set up modules!")
     # State Vars
     previous_direction = None
     while True:
+        pass
+        # Set Difficulty Data
+        if MQTTConnection.difficulty_received:
+            difficulty_data = MQTTConnection.read_message("difficulty_data", "difficulty_received")
+            NiosStream.send(fpga_send_game_mode(difficulty_data))
+
+        # During Game
         if NiosStream.is_received_data:
             # Process
             data = NiosStream.get()
@@ -39,7 +47,15 @@ if __name__ == "__main__":
             current_direction = fpga_get_direction(DirectionData)
             if current_direction != previous_direction:
                 fpga_send_direction(NiosStream, current_direction)
+                print(f"[INFO] Direction Changed: {current_direction}")
             previous_direction = current_direction
+
+        # Signifies End Game
+        if MQTTConnection.score_received:
+            score_data = MQTTConnection.read_message("score_data", "score_received")
+            NiosStream.send(fpga_send_score(MQTTConnection.score_data))
+            print(f"[INFO] Score: {MQTTConnection.score_data}")
+            print("[INFO] Game has ended!")
         else:
             continue
         

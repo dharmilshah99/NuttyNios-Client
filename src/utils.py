@@ -11,13 +11,28 @@ from config import *
 # FPGA
 ###
 
+def fpga_send_game_mode(game_mode_data):
+    """Sends game mode to Nios"""
+    if game_mode_data == "0":
+        return "-"
+    elif game_mode_data == "1":
+         return "+"
+    else:
+        return None
+
+def fpga_send_score(score_data):
+    """sends score for Nios to Display"""
+    return "~" + score_data
+
 def fpga_get_direction(direction_data):
+    """Gets direction to send to Nios"""
     # Get first direction
     if direction_data.directions_moved:
         direction_moved = direction_data.directions_moved.pop()
         return direction_moved
 
 def fpga_send_direction(nios_stream, direction_moved):
+    """Sends direction to Nios"""
     # Return
     if direction_moved == DirectionMoved.UP:
         nios_stream.send("Up")
@@ -28,7 +43,7 @@ def fpga_send_direction(nios_stream, direction_moved):
     elif direction_moved == DirectionMoved.RIGHT:
         nios_stream.send("Right")
     else:
-        nios_stream.send("Nutty Nios")
+        nios_stream.send(None)
     return
 
 def fpga_process_data(raw_data):
@@ -81,8 +96,9 @@ class NiosDataStream(object):
                     
     def send(self, transmit_data):
         """Sends message to send to Nios"""
-        self.jtag_client.write(str.encode(transmit_data + "$"))  #$ Indicates start/end of message character
-        self.is_transmit_data = True
+        if transmit_data is not None:
+            self.jtag_client.write(str.encode(transmit_data + "$"))  #$ Indicates start/end of message character
+            self.is_transmit_data = True
 
     def get(self):
         """Get messages"""
@@ -152,11 +168,19 @@ class MQTT(object):
         # Client
         self.client = client
         self.client.on_connect = self.on_connect
+        self.client.on_message = self.on_message
         self.client.username_pw_set(username=MQTT_USERNAME, password=MQTT_PASSWORD)
         self.client.tls_set(MQTT_CA_CERT, MQTT_CERTFILE, MQTT_KEYFILE, tls_version=2)
         self.is_connected = False
         # Server
         self.hostname, self.port = hostname, port
+        # Data
+        self.difficulty_data = None
+        self.difficulty_received = False
+        self.score_data = None
+        self.score_received = False
+        # Topics
+        self.subscribe_topics = [("game/data/difficulty", 0), (f"node/{MQTT_CLIENT_NAME}/data/score", 0)]
 
     def connect(self):
         """Connects to MQTT Server"""
@@ -175,3 +199,26 @@ class MQTT(object):
         """Successful connection callback"""
         if rc == 0:
             self.is_connected = True
+        client.subscribe(self.subscribe_topics)
+    
+    def on_message(self, client, userdata, msg):
+        """On message callback"""
+        # Retrieve Game Difficulty
+        if msg.topic == "game/data/difficulty":        
+            self.difficulty_data = msg.payload.decode()
+            print(f"[INFO] Game mode selected: {self.difficulty_data}")
+            self.difficulty_received = True
+        # Retreive Score
+        if msg.topic == f"node/{MQTT_CLIENT_NAME}/data/score":
+            self.score_data = msg.payload.decode()
+            print(f"[INFO] Score: {self.score_data}")
+            self.score_received = True
+    
+    def read_message(self, attr_name, attr_name_flag):
+        # TODO: Find a more elegant way that doesnt use set/get attributes.
+        """Reads message received"""
+        if getattr(self, attr_name): 
+            setattr(self, attr_name_flag, False)
+            return getattr(self, attr_name)
+        else:
+            return None
