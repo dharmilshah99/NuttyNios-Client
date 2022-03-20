@@ -30,8 +30,7 @@ if __name__ == "__main__":
         # Set Difficulty Data
         if MQTTConnection.difficulty_received:
             difficulty_data = MQTTConnection.read_message("difficulty_data", "difficulty_received")
-            NiosStream.send(fpga_send_game_mode(difficulty_data))
-
+            fpga_send_game_mode(NiosStream, difficulty_data)
         # During Game
         if NiosStream.is_received_data:
             # Process
@@ -53,7 +52,7 @@ if __name__ == "__main__":
         # Signifies End Game
         if MQTTConnection.score_received:
             score_data = MQTTConnection.read_message("score_data", "score_received")
-            NiosStream.send(fpga_send_score(MQTTConnection.score_data))
+            fpga_send_score(NiosStream, MQTTConnection.score_data)
             print(f"[INFO] Score: {MQTTConnection.score_data}")
             print("[INFO] Game has ended!")
         else:

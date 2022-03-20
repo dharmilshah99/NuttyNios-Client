@@ -93,7 +93,8 @@ class NiosDataStream(object):
             if (nios_data == '') or (nios_data[0] == 'n'):
                 continue
             self.receive_msg = self._process(nios_data)
-            self.is_received_data = True
+            if self.receive_msg:
+                self.is_received_data = True
                     
     def send(self, transmit_data):
         """Sends message to send to Nios"""
@@ -111,8 +112,11 @@ class NiosDataStream(object):
         # Buffer Input
         self.message_buffer.append(data)
         msg = ''.join(self.message_buffer)
-        msg = msg.splitlines()[-2]
-        return msg
+        if len(msg) > 1:
+            msg = msg.splitlines()[-2]
+            return msg
+        else:
+            return None
 
 class ProcessDirection(object):
     """Simple algorithm that processes accelerometer data into directions"""
