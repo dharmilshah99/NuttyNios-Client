@@ -35,9 +35,9 @@ def fpga_send_direction(nios_stream, direction_moved):
     """Sends direction to Nios"""
     # Return
     if direction_moved == DirectionMoved.UP:
-        nios_stream.send("~UP")
-    elif direction_moved == DirectionMoved.DOWN:
         nios_stream.send("~DOWN")
+    elif direction_moved == DirectionMoved.DOWN:
+        nios_stream.send("~UP")
     elif direction_moved == DirectionMoved.LEFT:
         nios_stream.send("~LEFT")
     elif direction_moved == DirectionMoved.RIGHT:
