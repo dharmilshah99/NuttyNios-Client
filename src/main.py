@@ -31,7 +31,6 @@ if __name__ == "__main__":
         if MQTTConnection.difficulty_received:
             difficulty_data = MQTTConnection.read_message("difficulty_data", "difficulty_received")
             fpga_send_game_mode(NiosStream, difficulty_data)
-
         # During Game
         if NiosStream.is_received_data:
             # Process
