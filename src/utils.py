@@ -48,16 +48,19 @@ def fpga_send_direction(nios_stream, direction_moved):
 
 def fpga_process_data(raw_data):
     """Processes raw data from Terminal"""
-    arr = raw_data.split(',')
-    if len(arr) != 5:
-        return
-    arr = [int(x, 16) for x in arr]
-    coords = [fpga_twos_comp(x, 32)/8388608 for x in arr[:3]]
-    return {
-        "axes": coords,
-        "buttons": arr[3],
-        "switches": arr[4]
-    }
+    try:
+        arr = raw_data.split(',')
+        if len(arr) != 5:
+            return
+        arr = [int(x, 16) for x in arr]
+        coords = [fpga_twos_comp(x, 32)/8388608 for x in arr[:3]]
+        return {
+            "axes": coords,
+            "buttons": arr[3],
+            "switches": arr[4]
+        }
+    except:
+        return None
 
 def fpga_twos_comp(val, bits):
     """Interprets integer as 32bit twos-complement number"""
